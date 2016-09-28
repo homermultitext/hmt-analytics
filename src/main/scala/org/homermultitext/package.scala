@@ -5,15 +5,13 @@ package org.homermultitext
 package object analytics {
   import io.github.cite_architecture.cite._
 
-  trait HmtToken {
-    val urn: CtsUrn
-    val deformance: String
-    val analysis: CiteUrn
-  }
+  case class HmtToken(val urn: CtsUrn,
+    val deformance: String,
+    val analysis: CiteUrn ) { }
 
   trait HmtTokenizer {
     def tokenize(txt: TupleText)
   }
   type HmtTokenization = Vector[HmtToken]
-  type TupleText = (String, String)
+  type TupleText = Vector[(String, String)]
 }
