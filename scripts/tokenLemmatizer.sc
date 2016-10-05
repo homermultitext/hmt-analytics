@@ -1,3 +1,4 @@
+#!/usr/bin/env amm
 
 import scala.io.Source
 
