@@ -1,3 +1,12 @@
+/*
+An ammonite script to process text in a 2-column tab-delimited file. The first column should give a URN for the passage.
+The second column should be string of simple text content extracted from an HMT archival XML edition.
+
+The script collects unique words from the second column's contents and submits them to the perseus morphological service.
+It writes its output to files in 10-word chunks, and allows you to resume processing from a specified
+
+*/
+
 import scala.xml._
 import scala.io.Source
 import java.io._
@@ -14,10 +23,9 @@ def pad(i: Int) = {
 }
 
 @main
-def getMorpheusBy10s(fName: String, initial10 : Int) = {
+def getMorpheusBy10s(fName: String, initial10 : Int = 0) = {
 
-  // Read in a 2-column tab-delmited file. 2nd column should be
-  // a string of text content extracted from archival XML edition.
+
   val scholiaEx = scala.io.Source.fromFile(fName).getLines.toVector
   val filteredArray = scholiaEx.map(s => s.split("\t")).filter(_.size == 2)
   // Extact text content and filter out junk characters and empty entries
