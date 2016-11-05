@@ -2,6 +2,17 @@ import scala.xml._
 import scala.io.Source
 import java.io._
 
+
+def pad(i: Int) = {
+  if (i < 10) {
+    "000"+ i
+  } else if (i < 100) {
+    "00" + i
+  } else if ( i < 1000) {
+    "0" + i
+  }
+}
+
 @main
 def getMorpheusBy10s(fName: String, initial10 : Int) = {
 
@@ -31,7 +42,7 @@ def getMorpheusBy10s(fName: String, initial10 : Int) = {
 
     println("Look at decade " + i)
     val tenWords = sortedWords.drop(i * 10).take(10)
-    val fName = "decade" + i + ".tsv"
+    val fName = "decade" + pad(i) + ".tsv"
 
     val parsedResults = tenWords.map( w => {
       println ("\tTry word " + w)
