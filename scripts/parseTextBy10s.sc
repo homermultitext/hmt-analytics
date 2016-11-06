@@ -29,6 +29,8 @@ def pad(i: Int) = {
     "00" + i
   } else if ( i < 1000) {
     "0" + i
+  } else {
+    i.toString
   }
 }
 
