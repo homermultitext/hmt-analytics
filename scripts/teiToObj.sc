@@ -16,11 +16,23 @@ case object LiteralToken extends LexicalCategory {val name = "string literal"}
 
 
 
+sealed trait EditorialStatus {def name : String}
+case object Clear extends EditorialStatus {val name = "clear"}
+case object Unclear extends EditorialStatus {val name = "unclear"}
+case object Restored extends EditorialStatus {val name = "restored"}
+
+
+case class EditedString (
+  val str: String,
+  val status: EditorialStatus
+)
 case class HmtToken (
   var urn: String,
   var lang : String = "grc",
-  var txt: String,
-  var lexicalCategory: LexicalCategory)
+  var txtV: Vector[EditedString],
+  var lexicalCategory: LexicalCategory,
+  var editorialStatus: EditorialStatus = Clear
+)
 
 
 var tokenBuffer = scala.collection.mutable.ArrayBuffer.empty[HmtToken]
@@ -29,6 +41,8 @@ var tokenBuffer = scala.collection.mutable.ArrayBuffer.empty[HmtToken]
 
 val ignoreList = Vector("note")
 val wrapperList = Vector("w", "choice", "cit")
+val punctuation = Vector(",",".",";","⁑")
+
 
 def extractText(s: String) = {
   val cols = s.split("#")
@@ -61,8 +75,14 @@ def collectTokens (hmtToken: HmtToken,
 
 
       for (tk <- tokenList) {
-        var currToken = hmtToken.copy(txt = tk)
+        val edStr = EditedString(tk, Clear)
+        var currToken = hmtToken.copy(txtV = Vector(edStr))
+        if (punctuation.contains(tk)) {
+          currToken.lexicalCategory = Punctuation
+        }
+
         tokenBuffer += currToken
+
         //println("Add token " + currToken.txt)
         //println(" -> buffer " + tokenBuffer)
       }
@@ -90,7 +110,7 @@ def tokenizePair(urnStr: String, xmlStr: String ) = {
   val currToken = HmtToken(
     urn = urnStr,
     lexicalCategory = LexicalToken,
-    txt = ""
+    txtV = Vector.empty
   )
   // zero out the global buffer,
   // then collect:
@@ -117,7 +137,7 @@ def edtokens(f: String) = {
   }
   for (psg <- urTokens) {
     for (tk <- psg) {
-    println(tk.urn + " " + tk.txt)
+    println(tk.urn + " " + tk.lexicalCategory + " "+ tk.txtV)
   }
   }
 /*
