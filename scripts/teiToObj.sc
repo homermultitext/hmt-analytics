@@ -1,7 +1,9 @@
 // read hmt tei and instantiate as object.
+// Simple script to play with while planning
+// how to develop a serious, tested model.
 //
-// Use a single global
-// buffer for tokens?
+// Use a single global buffer for tokens, to
+// avoid memory issues.  Ugly.
 //
 import scala.xml._
 import scala.collection.mutable.ArrayBuffer
