@@ -62,12 +62,10 @@ case class HmtToken (  var urn: String,
   var lang : String = "grc",
   var txtV: Vector[EditedString],
   var lexicalCategory: LexicalCategory,
+  
+  var lexicalDisambiguation: String = "Automated disambiguation",
   var alternateReading: AlternateReading = defaultAlternate,
   var discourse: DiscourseCategory = DirectVoice
-//  var editorialDisambiguation
-  // ADD:
-  // entity disambiguation
-  // discourse disambiguation
 )
 
 
@@ -96,7 +94,7 @@ def extractUrn(s: String) = {
 }
 
 def getAlternate (hmtToken: HmtToken, n: xml.Node) = {
-  println("Need to extract alternate")
+  println("=>Need to extract alternate")
 }
 
 // collect a mutable array (ArrayBuffer)
@@ -104,7 +102,7 @@ def getAlternate (hmtToken: HmtToken, n: xml.Node) = {
 def collectWrappedWordStrings(editorialStatus: EditorialStatus, n: xml.Node): Unit = {
   n match {
     case t: xml.Text => {
-      wrappedWordBuffer += EditedString(t.text, editorialStatus)
+      wrappedWordBuffer += EditedString(t.text.replaceAll(" ", ""), editorialStatus)
     }
 
     case e: xml.Elem => {
@@ -165,7 +163,6 @@ def collectTokens (hmtToken: HmtToken,  n: xml.Node ): Unit = {
         }
 
         case l: String =>  {
-          //println("Get children for  " + l)
           for (ch <- e.child) {
             ch.label match {
               case "q" => {
@@ -175,12 +172,18 @@ def collectTokens (hmtToken: HmtToken,  n: xml.Node ): Unit = {
                 }
               }
 
-              /*case "persName" => {
-                val pnToken = hmtToken.copy()
-              }*/
+              case "persName" => {
+                val nList = ch \ "@n"
+                val pnToken = hmtToken.copy(lexicalDisambiguation = nList(0).text)
+                for (pnVal <- ch.child) {
+                  collectTokens(pnToken, pnVal)
+                }
+              }
 
               case _ => {
-                println("Getting child of " + l )
+                if ((l == "p") || (l == "div")) {} else {
+                  println("Getting child of " + l )
+                }
                 collectTokens(hmtToken, ch)
               }
             }
@@ -225,7 +228,7 @@ def edtokens(f: String) = {
   }
   for (psg <- urTokens) {
     for (tk <- psg) {
-      println(tk.urn + " " + tk.lexicalCategory + " " + tk.discourse + " " + tk.txtV.map(EditedString.typedText(_)).mkString(" + ")) 
+      println(tk.urn + " " + tk.lexicalCategory + " " + tk.discourse + " " + tk.lexicalDisambiguation + " " + tk.txtV.map(EditedString.typedText(_)).mkString(" + "))
     }
   }
 }
