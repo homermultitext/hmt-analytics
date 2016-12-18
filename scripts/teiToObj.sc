@@ -27,7 +27,7 @@ case class EditedString (
   val status: EditorialStatus
 )
 object EditedString {
-  def typedText(es: EditedString) = es.str + "_" + es.status
+  def typedText(es: EditedString) = es.str + " (" + es.status + ")"
 }
 
 
@@ -41,6 +41,8 @@ case class HmtToken (
 
 
 var tokenBuffer = scala.collection.mutable.ArrayBuffer.empty[HmtToken]
+var wrappedWordBuffer = scala.collection.mutable.ArrayBuffer.empty[EditedString]
+
 
 
 
@@ -71,11 +73,29 @@ def getAlternate (hmtToken: HmtToken, n: xml.Node) = {
 
 // collect a mutable array (ArrayBuffer)
 // of EditedString objects
-def collectWrappedWordStrings(hmtToken: HmtToken,
-  n: xml.Node): ArrayBuffer[EditedString] = {
+def collectWrappedWordStrings(editorialStatus: EditorialStatus, n: xml.Node): Unit = {
   println("Need to collect wrapped node !" )
-  val editStrings = scala.collection.mutable.ArrayBuffer.empty[EditedString]
-  editStrings
+
+  n match {
+    case t: xml.Text => {
+      wrappedWordBuffer += EditedString(t.text, editorialStatus)
+    }
+    case e: xml.Elem => {
+      println("Collect from node node  " + n.label)
+      e.label match {
+        case "unclear" => {
+          for (ch <- e.child) {
+            collectWrappedWordStrings(Unclear,ch)
+          }
+        }
+        case _ => {
+          for (ch <- e.child) {
+            collectWrappedWordStrings(editorialStatus,ch)
+          }
+        }
+      }
+    }
+  }
 }
 
 def collectTokens (hmtToken: HmtToken,  n: xml.Node ): Unit = {
@@ -101,18 +121,26 @@ def collectTokens (hmtToken: HmtToken,  n: xml.Node ): Unit = {
     case e: xml.Elem => {
       println("Analyze node  " + n.label)
       e.label match {
-        case "note"=> {}
+        case "note"=> {/*ignore*/}
+
         case "w" => {
-          val editStrings = scala.collection.mutable.ArrayBuffer.empty[EditedString]
-          collectWrappedWordStrings(hmtToken,e)
+          println("Node is a w" )
+          wrappedWordBuffer.clear
+          collectWrappedWordStrings(Clear,e)
+          var currToken = hmtToken.copy(txtV = wrappedWordBuffer.toVector)
+          tokenBuffer += currToken
         }
+
         case "choice" => {
           val alt = getAlternate(hmtToken,e)
         }
+
         case _ =>  {
-          for (ch <- e.child)
-          collectTokens(hmtToken, ch)
+          for (ch <- e.child) {
+            collectTokens(hmtToken, ch)
+          }
         }
+
       }
     }
   }
@@ -150,7 +178,7 @@ def edtokens(f: String) = {
   }
   for (psg <- urTokens) {
     for (tk <- psg) {
-      println(tk.urn + " " + tk.lexicalCategory + " "+ tk.txtV.map(EditedString.typedText(_)).mkString(" "))
+      println(tk.urn + " " + tk.lexicalCategory + " "+ tk.txtV.map(EditedString.typedText(_)).mkString(" + "))
     }
   }
 }
