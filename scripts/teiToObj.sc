@@ -47,6 +47,15 @@ case class AlternateReading (
   var alternateCategory: AlternateCategory,
   var txtV: Vector[EditedString]
 )
+object AlternateReading {
+  def alternative (alt: AlternateReading) = {
+    alt.alternateCategory match {
+      case Original => "(no alternate)"
+      case _  => alt.txtV.map(es => EditedString.typedText(es)).mkString(" + ")
+    }
+  }
+}
+
 val defaultAlternate = AlternateReading(Original, Vector.empty[EditedString])
 
 
@@ -62,7 +71,7 @@ case class HmtToken (  var urn: String,
   var lang : String = "grc",
   var txtV: Vector[EditedString],
   var lexicalCategory: LexicalCategory,
-  
+
   var lexicalDisambiguation: String = "Automated disambiguation",
   var alternateReading: AlternateReading = defaultAlternate,
   var discourse: DiscourseCategory = DirectVoice
@@ -93,8 +102,30 @@ def extractUrn(s: String) = {
   cols(0)
 }
 
+// n must be a TEI choice element
+// possibilities;
+// abbr/expan
+// sic/corr
+// orig/reg
 def getAlternate (hmtToken: HmtToken, n: xml.Node) = {
   println("=>Need to extract alternate")
+  val cNames = n.child.map(_.label).distinct.filterNot(_ == "#PCDATA")
+  println("CHILDREN " + cNames)
+  /*
+  for (c <- n.child) {
+    c.label match {
+      case "expan" => {
+        println("WE'RE ExPANDING")
+        val expansion = EditedString(c.text.replaceAll(" ",""), Restored)
+        val alt = AlternateReading(Restoration, Vector(expansion))
+        println("\tAlt is " + alt)
+        var currToken = hmtToken.copy(alternateReading = alt )
+        println("Token is " + currToken)
+        tokenBuffer += currToken
+      }
+      case _ => println("=>NOT YET IMPLENTED: " + c.label)
+    }
+  }*/
 }
 
 // collect a mutable array (ArrayBuffer)
@@ -156,6 +187,7 @@ def collectTokens (hmtToken: HmtToken,  n: xml.Node ): Unit = {
 
         case "choice" => {
           val alt = getAlternate(hmtToken,e)
+
         }
 
         case "cit" => {
@@ -228,7 +260,7 @@ def edtokens(f: String) = {
   }
   for (psg <- urTokens) {
     for (tk <- psg) {
-      println(tk.urn + " " + tk.lexicalCategory + " " + tk.discourse + " " + tk.lexicalDisambiguation + " " + tk.txtV.map(EditedString.typedText(_)).mkString(" + "))
+      println(tk.urn + " " + tk.lexicalCategory + " " + tk.lang + " " + tk.discourse + " " + tk.lexicalDisambiguation + " " + AlternateReading.alternative(tk.alternateReading) + " " + tk.txtV.map(EditedString.typedText(_)).mkString(" + "))
     }
   }
 }
