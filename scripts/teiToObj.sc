@@ -2,11 +2,18 @@
 // Simple script to play with while planning
 // how to develop a serious, tested model.
 //
-// Use a single global buffer for tokens, to
-// avoid memory issues.  Ugly.
+// Use a single global buffer for tokens,
+// and a single global buffer for wrapped word
+// tokens, in order to avoid memory issues
+// when recursively passing big buffers
+// down a deep xml stack. Ugly.
 //
 import scala.xml._
 import scala.collection.mutable.ArrayBuffer
+
+
+// This should be externally defined.
+val punctuation = Vector(",",".",";","⁑")
 
 sealed trait LexicalCategory {def name : String}
 case object LexicalToken extends LexicalCategory {val name = "lexical token"}
@@ -15,6 +22,12 @@ case object Punctuation extends LexicalCategory {val name = "punctuation"}
 case object LiteralToken extends LexicalCategory {val name = "string literal"}
 
 
+
+sealed trait AlternateCategory {def name : String}
+case object Restoration extends AlternateCategory {val name = "editorial restoration or completion"}
+case object Multiform extends AlternateCategory {val name = "scribally recorded multiform"}
+case object Correction extends AlternateCategory {val name = "scribal correction"}
+case object Original extends AlternateCategory {val name = "no alternate reading"}
 
 sealed trait EditorialStatus {def name : String}
 case object Clear extends EditorialStatus {val name = "clear"}
@@ -30,14 +43,33 @@ object EditedString {
   def typedText(es: EditedString) = es.str + " (" + es.status + ")"
 }
 
+case class AlternateReading (
+  var alternateCategory: AlternateCategory,
+  var txtV: Vector[EditedString]
+)
+val defaultAlternate = AlternateReading(Original, Vector.empty[EditedString])
 
-case class HmtToken (
-  var urn: String,
+
+
+sealed trait DiscourseCategory {def name : String}
+case object DirectVoice extends DiscourseCategory {val name = "voice of text"}
+case object QuotedLanguage extends DiscourseCategory {val name = "quoted language"}
+case object QuotedLiteral extends DiscourseCategory {val name = "quoted literal string"}
+case object CitedText extends DiscourseCategory {val name = "cited passage of text"}
+
+
+case class HmtToken (  var urn: String,
   var lang : String = "grc",
   var txtV: Vector[EditedString],
   var lexicalCategory: LexicalCategory,
-  var editorialStatus: EditorialStatus = Clear
+  var alternateReading: AlternateReading = defaultAlternate,
+  var discourse: DiscourseCategory = DirectVoice
+//  var editorialDisambiguation
+  // ADD:
+  // entity disambiguation
+  // discourse disambiguation
 )
+
 
 
 var tokenBuffer = scala.collection.mutable.ArrayBuffer.empty[HmtToken]
@@ -45,10 +77,6 @@ var wrappedWordBuffer = scala.collection.mutable.ArrayBuffer.empty[EditedString]
 
 
 
-
-//val ignoreList = Vector("note")
-//val wrapperList = Vector("choice", "cit")
-val punctuation = Vector(",",".",";","⁑")
 
 
 def extractText(s: String) = {
@@ -74,14 +102,12 @@ def getAlternate (hmtToken: HmtToken, n: xml.Node) = {
 // collect a mutable array (ArrayBuffer)
 // of EditedString objects
 def collectWrappedWordStrings(editorialStatus: EditorialStatus, n: xml.Node): Unit = {
-  println("Need to collect wrapped node !" )
-
   n match {
     case t: xml.Text => {
       wrappedWordBuffer += EditedString(t.text, editorialStatus)
     }
+
     case e: xml.Elem => {
-      println("Collect from node node  " + n.label)
       e.label match {
         case "unclear" => {
           for (ch <- e.child) {
@@ -119,12 +145,11 @@ def collectTokens (hmtToken: HmtToken,  n: xml.Node ): Unit = {
     }
 
     case e: xml.Elem => {
-      println("Analyze node  " + n.label)
       e.label match {
         case "note"=> {/*ignore*/}
+        case "ref"=> {/*ignore*/}
 
         case "w" => {
-          println("Node is a w" )
           wrappedWordBuffer.clear
           collectWrappedWordStrings(Clear,e)
           var currToken = hmtToken.copy(txtV = wrappedWordBuffer.toVector)
@@ -135,9 +160,31 @@ def collectTokens (hmtToken: HmtToken,  n: xml.Node ): Unit = {
           val alt = getAlternate(hmtToken,e)
         }
 
-        case _ =>  {
+        case "cit" => {
+          println("WRAPPER: cit")
+        }
+
+        case l: String =>  {
+          //println("Get children for  " + l)
           for (ch <- e.child) {
-            collectTokens(hmtToken, ch)
+            ch.label match {
+              case "q" => {
+                val quotedToken = hmtToken.copy(discourse = QuotedLanguage)
+                for (quoted <- ch.child) {
+                  collectTokens(quotedToken, quoted)
+                }
+              }
+
+              /*case "persName" => {
+                val pnToken = hmtToken.copy()
+              }*/
+
+              case _ => {
+                println("Getting child of " + l )
+                collectTokens(hmtToken, ch)
+              }
+            }
+
           }
         }
 
@@ -178,7 +225,7 @@ def edtokens(f: String) = {
   }
   for (psg <- urTokens) {
     for (tk <- psg) {
-      println(tk.urn + " " + tk.lexicalCategory + " "+ tk.txtV.map(EditedString.typedText(_)).mkString(" + "))
+      println(tk.urn + " " + tk.lexicalCategory + " " + tk.discourse + " " + tk.txtV.map(EditedString.typedText(_)).mkString(" + ")) 
     }
   }
 }
