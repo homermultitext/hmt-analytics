@@ -26,6 +26,11 @@ case class EditedString (
   val str: String,
   val status: EditorialStatus
 )
+object EditedString {
+  def typedText(es: EditedString) = es.str + "_" + es.status
+}
+
+
 case class HmtToken (
   var urn: String,
   var lang : String = "grc",
@@ -39,8 +44,8 @@ var tokenBuffer = scala.collection.mutable.ArrayBuffer.empty[HmtToken]
 
 
 
-val ignoreList = Vector("note")
-val wrapperList = Vector("w", "choice", "cit")
+//val ignoreList = Vector("note")
+//val wrapperList = Vector("choice", "cit")
 val punctuation = Vector(",",".",";","⁑")
 
 
@@ -60,44 +65,52 @@ def extractUrn(s: String) = {
   cols(0)
 }
 
-def collectTokens (hmtToken: HmtToken,
-  n: xml.Node ): Unit = {
+def getAlternate (hmtToken: HmtToken, n: xml.Node) = {
+  println("Need to extract alternate")
+}
 
+// collect a mutable array (ArrayBuffer)
+// of EditedString objects
+def collectWrappedWordStrings(hmtToken: HmtToken,
+  n: xml.Node): ArrayBuffer[EditedString] = {
+  println("Need to collect wrapped node !" )
+  val editStrings = scala.collection.mutable.ArrayBuffer.empty[EditedString]
+  editStrings
+}
 
+def collectTokens (hmtToken: HmtToken,  n: xml.Node ): Unit = {
+  // xml nodes are either Text or Element:
   n match {
     case t: xml.Text => {
-
+      // the awesomeness of regex:
+      // split on set of characters without
+      // losing them:
       val depunctuate =   t.text.split("((?<=[,;⁑\\.])|(?=[,;⁑\\.]))")
 
-
-
       val tokenList = depunctuate.flatMap(_.split("[ ]+").filterNot(_.isEmpty))
-
-
       for (tk <- tokenList) {
         val edStr = EditedString(tk, Clear)
         var currToken = hmtToken.copy(txtV = Vector(edStr))
         if (punctuation.contains(tk)) {
           currToken.lexicalCategory = Punctuation
         }
-
         tokenBuffer += currToken
-
-        //println("Add token " + currToken.txt)
-        //println(" -> buffer " + tokenBuffer)
       }
-      //currToken.txt += t
-      //println("Update token: " + currToken.txt)
     }
+
     case e: xml.Elem => {
       println("Analyze node  " + n.label)
-      if (ignoreList.contains(e.label)) {
-
-      } else if (wrapperList.contains(e.label)) {
-        println("Wrapper element: " + e.label)
-
-      } else {
-        for (ch <- e.child) {
+      e.label match {
+        case "note"=> {}
+        case "w" => {
+          val editStrings = scala.collection.mutable.ArrayBuffer.empty[EditedString]
+          collectWrappedWordStrings(hmtToken,e)
+        }
+        case "choice" => {
+          val alt = getAlternate(hmtToken,e)
+        }
+        case _ =>  {
+          for (ch <- e.child)
           collectTokens(hmtToken, ch)
         }
       }
@@ -137,18 +150,7 @@ def edtokens(f: String) = {
   }
   for (psg <- urTokens) {
     for (tk <- psg) {
-    println(tk.urn + " " + tk.lexicalCategory + " "+ tk.txtV)
+      println(tk.urn + " " + tk.lexicalCategory + " "+ tk.txtV.map(EditedString.typedText(_)).mkString(" "))
+    }
   }
-  }
-/*
-  for (pr <- pairs) {
-    tokenizePair(pr._1, pr._2)
-  }
-
-  println("Total tokens: " + tokenBuffer.size)
-  for (tk <- tokenBuffer) {
-    println(tk.urn + " == " + tk.txt)
-  }
-*/
-
 }
