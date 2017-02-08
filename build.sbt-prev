@@ -1,9 +1,18 @@
+// for semweb
+resolvers += sbt.Resolver.bintrayRepo("denigma", "denigma-releases")
+
 // Needed for specs2
 resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
 // Repository for
 resolvers += "uh-nexus" at "http://beta.hpcc.uh.edu/nexus/content/groups/public"
 
+resolvers += "labra" at    "http://dl.bintray.com/labra/maven"
+
+
 libraryDependencies += "io.github.cite_architecture" %% "cite" % "1.+"
+
+ libraryDependencies += "es.weso" %% "shexcala" % "0.7.12"
+
 
 // May not need?  Handled by greek class transparently?
 //libraryDependencies += "edu.unc.epidoc" % "transcoder" % "1.2-SNAPSHOT"
@@ -14,8 +23,15 @@ libraryDependencies += "com.lihaoyi" %% "ammonite-ops" % "0.7.4"
 
 libraryDependencies += "org.specs2" %% "specs2-core" % "3.6.5" % "test"
 
+/*
+
+Looking at something like this:
+https://github.com/labra/shexjava/blob/master/src/main/java/es/weso/shexjava/ShExValidator.java
 
 
+Schema.fromString(contents,format,none).get()
+
+*/
 
 scalacOptions in Test ++= Seq("-Yrangepos")
 
