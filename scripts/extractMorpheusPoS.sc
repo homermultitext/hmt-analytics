@@ -44,6 +44,20 @@ def formatEntry(e: Elem) = {
   MorphId(uri + "_" + headWord  ,  pos)
 }
 
+
+def printAnalysesBy100s() {
+  /*
+  // ... and print 3-column output to standard output:
+  for (wd <- idAnalyzed) {
+    val analysisList = wd._2
+    for (a <- analysisList) {
+      a match {
+        case mid: MorphId =>println(wd._1 + "\t" + mid.pos + "\t" + mid.lexent)
+        case _ => println("Reply for " + wd._1 + " is broken.")
+      }
+    }
+  } */
+}
 @main
 def extractPoS(fName : String) {
   val parseTsv = scala.io.Source.fromFile(fName).getLines.toVector
@@ -73,14 +87,18 @@ def extractPoS(fName : String) {
   // Zip together surface forms and analyses:
   val idAnalyzed = idColumn.zip(morphAnalyses)
 
-  // ... and print 3-column output to standard output:
-  for (wd <- idAnalyzed) {
-    val analysisList = wd._2
-    for (a <- analysisList) {
-      a match {
-        case mid: MorphId =>println(wd._1 + "\t" + mid.pos + "\t" + mid.lexent)
-        case _ => println("Reply for " + wd._1 + " is broken.")
+  for (a <- idAnalyzed) {
+    //println(a._1 + "->")
+    a._2 match {
+      case midList : List[MorphId] => {
+        for (mid <- midList) {
+          println(a._1 + "\t" + mid.pos + "\t" + mid.lexent)
+        }
       }
+      case _ => println("Something else")
     }
   }
+  //printAnalysesBy100s(idAnalyzed)
+
+
 }

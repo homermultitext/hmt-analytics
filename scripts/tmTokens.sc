@@ -13,7 +13,7 @@ import scala.xml._
 
 // Two blacklists:  first, TEI elements that should
 // *always* be ignored:
-val ignorable = Vector("abbr", "orig","sic")
+val ignorable = Vector("abbr", "orig","sic", "num")
 // TEI elements ignored as one of a pair in a `choice`:
 val ignoreInChoicePair = Vector("EMPTY")
 
